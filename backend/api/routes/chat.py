@@ -7,8 +7,18 @@ import litellm
 import os
 import time
 import tiktoken
+import uuid
+import asyncio
+from services.logger import log_request
+from langfuse import Langfuse
 
 router = APIRouter()
+
+langfuse = Langfuse(
+    public_key=os.getenv("LANGFUSE_PUBLIC_KEY", ""),
+    secret_key=os.getenv("LANGFUSE_SECRET_KEY", ""),
+    host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
+)
 
 class Message(BaseModel):
     role: str
@@ -40,6 +50,13 @@ async def chat(request: ChatRequest):
     original_tokens = len(enc.encode(full_original))
     saved_tokens = original_tokens - input_tokens
 
+    trace = langfuse.trace(name="chat", metadata={"complexity": complexity["level"]})
+    generation = trace.generation(
+        name="llm_call",
+        model=routing["model"],
+        input=messages_dict,
+    )
+
     try:
         response = litellm.completion(
             model=routing["model"],
@@ -48,7 +65,9 @@ async def chat(request: ChatRequest):
             api_key=os.getenv("GROQ_API_KEY", ""),
         )
         output_text = response.choices[0].message.content
+        generation.end(output=output_text)
     except Exception as e:
+        generation.end(level="ERROR", status_message=str(e))
         raise HTTPException(status_code=500, detail=f"LLM Error: {str(e)}")
 
     output_tokens = len(enc.encode(output_text))
@@ -60,10 +79,6 @@ async def chat(request: ChatRequest):
 
     latency = (time.time() - start_time) * 1000
 
-    import uuid
-    import asyncio
-    from services.logger import log_request
-    
     request_id = str(uuid.uuid4())[:8]
     asyncio.create_task(log_request({
         "request_id": request_id,

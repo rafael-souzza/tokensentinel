@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Sentinel — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=DM+Sans:wght@300;500&family=DM+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0A0C10;
+            --surface: #111318;
+            --surface2: #181B22;
+            --accent: #00E5A0;
+            --data: #0EA5E9;
+            --agent: #7C3AED;
+            --text: #F0F2F5;
+            --muted: #6B7280;
+            --border: rgba(255,255,255,0.07);
+            --border-em: rgba(255,255,255,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 180px;
+            background: var(--bg);
+            border-right: 0.5px solid var(--border);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 20px;
+            letter-spacing: -1px;
+        }
+        .logo .white { color: #F0F2F5; }
+        .logo .green { color: var(--accent); }
+
+        .nav-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .nav-item.active {
+            color: var(--accent);
+            background: rgba(0, 229, 160, 0.08);
+        }
+
+        /* Main */
+        .main {
+            flex: 1;
+            padding: 48px 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        .header h1 {
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            font-size: 28px;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+        .metric-card:hover {
+            border-color: var(--border-em);
+        }
+        .metric-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .metric-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .metric-value.green { color: var(--accent); }
+        .metric-value.blue { color: var(--data); }
+        .metric-value.purple { color: var(--agent); }
+        .metric-value.white { color: var(--text); }
+
+        /* Section */
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 14px;
+            border-bottom: 0.5px solid var(--border);
+            font-family: 'DM Mono', monospace;
+            color: var(--muted);
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.01); }
+
+        td.model-cell { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--data); }
+
+        .badge {
+            font-family: 'DM Mono', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .badge.low    { background: rgba(0, 229, 160, 0.1); color: var(--accent); border: 0.5px solid rgba(0,229,160,0.2); }
+        .badge.medium { background: rgba(245, 158, 11, 0.1); color: #F59E0B; border: 0.5px solid rgba(245,158,11,0.2); }
+        .badge.high   { background: rgba(239, 68, 68, 0.1); color: #EF4444; border: 0.5px solid rgba(239,68,68,0.2); }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--muted);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .pulse {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="white">Token</span><span class="green">Sentinel</span>
+        </div>
+        <nav>
+            <div class="nav-item active"><span class="pulse"></span>Dashboard</div>
+            <div class="nav-item">Requests</div>
+            <div class="nav-item">Modelos</div>
+            <div class="nav-item">Custos</div>
+        </nav>
+    </aside>
+
+    <main class="main" id="app">
+        <div class="loading">Carregando métricas...</div>
+    </main>
+
+    <script>
+        async function loadMetrics() {
+            try {
+                const res = await fetch('/metrics');
+                const data = await res.json();
+                render(data);
+            } catch (e) {
+                document.getElementById('app').innerHTML = '<div class="loading">Erro ao conectar ao servidor</div>';
+            }
+        }
+
+        function render(data) {
+            document.getElementById('app').innerHTML = `
+                <div class="header">
+                    <h1>Dashboard</h1>
+                    <p>Observabilidade em tempo real do AI Gateway</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Requests</div>
+                        <div class="metric-value blue">${data.total_requests}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Tokens Consumidos</div>
+                        <div class="metric-value purple">${data.total_tokens.toLocaleString()}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Custo Total</div>
+                        <div class="metric-value white">$${data.total_cost.toFixed(4)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Economia Gerada</div>
+                        <div class="metric-value green">$${data.total_saved.toFixed(4)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Latência Média</div>
+                        <div class="metric-value">${data.avg_latency_ms}ms</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section-title">Por Modelo</div>
+                    <div class="table-container">
+                        <table>
+                            <tr><th>Modelo</th><th>Requests</th><th>Custo Total</th></tr>
+                            ${data.by_model.map(m => `
+                                <tr>
+                                    <td class="model-cell">${m.model.split('/').pop()}</td>
+                                    <td>${m.requests}</td>
+                                    <td>$${m.cost?.toFixed(6) || '0.000000'}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section-title">Requests Recentes</div>
+                    <div class="table-container">
+                        <table>
+                            <tr><th>ID</th><th>Modelo</th><th>Tokens</th><th>Custo</th><th>Latência</th><th>Complexidade</th></tr>
+                            ${data.recent_requests.map(r => `
+                                <tr>
+                                    <td style="color: var(--accent);">#${r.id}</td>
+                                    <td class="model-cell">${r.model?.split('/').pop() || ''}</td>
+                                    <td>${r.tokens}</td>
+                                    <td>$${r.cost?.toFixed(6) || '0'}</td>
+                                    <td>${r.latency}ms</td>
+                                    <td><span class="badge low">low</span></td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        loadMetrics();
+        setInterval(loadMetrics, 5000);
+    </script>
+</body>
+</html>
