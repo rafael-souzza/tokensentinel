@@ -19,14 +19,6 @@ class ChatRequest(BaseModel):
     model: Optional[str] = None
     max_tokens: Optional[int] = 500
 
-class ChatResponse(BaseModel):
-    response: str
-    model_used: str
-    complexity: dict
-    tokens: dict
-    cost: dict
-    latency_ms: float
-
 @router.post("/chat")
 async def chat(request: ChatRequest):
     start_time = time.time()
@@ -67,6 +59,25 @@ async def chat(request: ChatRequest):
     savings = max(0, cost_without - cost_total)
 
     latency = (time.time() - start_time) * 1000
+
+    import uuid
+    import asyncio
+    from services.logger import log_request
+    
+    request_id = str(uuid.uuid4())[:8]
+    asyncio.create_task(log_request({
+        "request_id": request_id,
+        "model_used": routing["model"],
+        "complexity_level": complexity["level"],
+        "complexity_score": complexity["score"],
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "saved_tokens": saved_tokens,
+        "cost_total": cost_total,
+        "cost_saved": savings,
+        "latency_ms": latency,
+        "status": "success",
+    }))
 
     return {
         "response": output_text,
